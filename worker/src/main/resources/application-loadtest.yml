@@ -1,0 +1,13 @@
+schedulejob:
+  worker:
+    # Keep heartbeat traffic lower than the default local dev cadence.
+    heartbeat-interval-ms: 2000
+    # Allow one worker node to absorb a 100k due burst with some headroom.
+    max-load: 120000
+    executor-core-pool-size: 256
+    executor-max-pool-size: 512
+    executor-queue-capacity: 120000
+    # Fail callback stalls faster during local loopback pressure.
+    callback-retry-delay-ms: 100
+    http-connect-timeout-ms: 1000
+    http-read-timeout-ms: 2000

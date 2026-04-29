@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="scheduler.mapper.ScheduleJobMapper">
+
+    <resultMap id="ScheduleJobMap" type="scheduler.domain.ScheduleJobDO">
+        <id column="id" property="id"/>
+        <result column="job_name" property="jobName"/>
+        <result column="route_key" property="routeKey"/>
+        <result column="shard_key" property="shardKey"/>
+        <result column="payload_json" property="payloadJson"/>
+        <result column="execute_time" property="executeTime"/>
+        <result column="priority" property="priority"/>
+        <result column="retry_times" property="retryTimes"/>
+        <result column="max_retry_times" property="maxRetryTimes"/>
+        <result column="creator_id" property="creatorId"/>
+        <result column="hot_cached" property="hotCached"/>
+        <result column="status" property="status"/>
+        <result column="claim_owner" property="claimOwner"/>
+        <result column="claim_time" property="claimTime"/>
+        <result column="claim_deadline" property="claimDeadline"/>
+        <result column="dispatch_target" property="dispatchTarget"/>
+        <result column="dispatch_note" property="dispatchNote"/>
+        <result column="archive_path" property="archivePath"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <sql id="BaseColumns">
+        id, job_name, route_key, shard_key, payload_json, execute_time, priority, retry_times, max_retry_times,
+        creator_id, hot_cached, status, claim_owner, claim_time, claim_deadline, dispatch_target, dispatch_note,
+        archive_path, create_time, update_time
+    </sql>
+
+    <insert id="insert" parameterType="scheduler.domain.ScheduleJobDO"
+            useGeneratedKeys="true" keyProperty="id">
+        insert into sj_job
+        (job_name, route_key, shard_key, payload_json, execute_time, priority, retry_times, max_retry_times,
+         creator_id, hot_cached, status, claim_owner, claim_time, claim_deadline, dispatch_target, dispatch_note,
+         archive_path, create_time, update_time)
+        values
+        (#{jobName}, #{routeKey}, #{shardKey}, #{payloadJson}, #{executeTime}, #{priority}, #{retryTimes},
+         #{maxRetryTimes}, #{creatorId}, #{hotCached}, #{status}, #{claimOwner}, #{claimTime}, #{claimDeadline},
+         #{dispatchTarget}, #{dispatchNote}, #{archivePath}, now(), now())
+    </insert>
+
+    <select id="selectById" resultMap="ScheduleJobMap">
+        select
+        <include refid="BaseColumns"/>
+        from sj_job
+        where id = #{id}
+        limit 1
+    </select>
+
+    <select id="selectJobs" resultMap="ScheduleJobMap">
+        select
+        <include refid="BaseColumns"/>
+        from sj_job
+        <where>
+            <if test="status != null and status != ''">
+                status = #{status}
+            </if>
+        </where>
+        order by id desc
+        limit #{limit}
+    </select>
+
+    <select id="selectPreheatJobs" resultMap="ScheduleJobMap">
+        select
+        <include refid="BaseColumns"/>
+        from sj_job
+        where status = 'WAITING'
+          and hot_cached = 0
+          and execute_time between #{fromTime} and #{toTime}
+        order by execute_time asc, id asc
+        limit #{limit}
+    </select>
+
+    <select id="selectHotCachedWaitingJobs" resultMap="ScheduleJobMap">
+        select
+        <include refid="BaseColumns"/>
+        from sj_job
+        where status = 'WAITING'
+          and hot_cached = 1
+          and execute_time &lt;= #{toTime}
+        order by execute_time asc, id asc
+        limit #{limit}
+    </select>
+
+    <select id="selectArchiveCandidates" resultMap="ScheduleJobMap">
+        select
+        <include refid="BaseColumns"/>
+        from sj_job
+        where status in ('Completed', 'FAILED')
+          and update_time &lt; #{beforeTime}
+        order by update_time asc, id asc
+    </select>
+
+    <select id="selectArchiveById" resultMap="ScheduleJobMap">
+        select
+        <include refid="BaseColumns"/>
+        from sj_job_archive
+        where id = #{id}
+        limit 1
+    </select>
+
+    <select id="selectArchiveJobs" resultMap="ScheduleJobMap">
+        select
+        <include refid="BaseColumns"/>
+        from sj_job_archive
+        order by id desc
+        limit #{limit}
+    </select>
+
+    <select id="selectArchiveFileCandidates" resultMap="ScheduleJobMap">
+        select
+        <include refid="BaseColumns"/>
+        from sj_job_archive
+        where archive_path is null
+           or archive_path = ''
+        order by update_time asc, id asc
+    </select>
+
+    <update id="markHotCached">
+        update sj_job
+        set hot_cached = #{hotCached},
+            update_time = now()
+        where id = #{id}
+    </update>
+
+    <update id="markWaiting">
+        update sj_job
+        set status = 'WAITING',
+            hot_cached = #{hotCached},
+            claim_owner = null,
+            claim_time = null,
+            claim_deadline = null,
+            dispatch_target = null,
+            dispatch_note = #{dispatchNote},
+            update_time = now()
+        where id = #{id}
+    </update>
+
+    <update id="markRetryWaitingFromInflight">
+        update sj_job
+        set status = 'WAITING',
+            retry_times = #{retryTimes},
+            execute_time = #{executeTime},
+            hot_cached = #{hotCached},
+            claim_owner = null,
+            claim_time = null,
+            claim_deadline = null,
+            dispatch_target = null,
+            dispatch_note = #{dispatchNote},
+            update_time = now()
+        where id = #{id}
+          and status = 'WAITING'
+    </update>
+
+    <update id="markPaused">
+        update sj_job
+        set status = 'PAUSED',
+            hot_cached = 0,
+            claim_owner = null,
+            claim_time = null,
+            claim_deadline = null,
+            dispatch_target = null,
+            dispatch_note = #{dispatchNote},
+            update_time = now()
+        where id = #{id}
+          and status = 'WAITING'
+    </update>
+
+    <update id="markCompletedOrFailed">
+        update sj_job
+        set status = #{status},
+            hot_cached = 0,
+            claim_owner = null,
+            claim_time = null,
+            claim_deadline = null,
+            dispatch_target = null,
+            dispatch_note = #{dispatchNote},
+            update_time = now()
+        where id = #{id}
+          and status != 'PAUSED'
+    </update>
+
+    <update id="updateRetryState">
+        update sj_job
+        set status = 'WAITING',
+            retry_times = #{retryTimes},
+            execute_time = #{executeTime},
+            claim_owner = null,
+            claim_time = null,
+            claim_deadline = null,
+            dispatch_target = null,
+            dispatch_note = #{dispatchNote},
+            hot_cached = #{hotCached},
+            update_time = now()
+        where id = #{id}
+    </update>
+
+    <update id="markFailed">
+        update sj_job
+        set status = 'FAILED',
+            hot_cached = 0,
+            claim_owner = null,
+            claim_time = null,
+            claim_deadline = null,
+            dispatch_target = null,
+            dispatch_note = #{dispatchNote},
+            update_time = now()
+        where id = #{id}
+    </update>
+
+    <insert id="upsertArchiveJob" parameterType="scheduler.domain.ScheduleJobDO">
+        insert into sj_job_archive
+        (id, job_name, route_key, shard_key, payload_json, execute_time, priority, retry_times, max_retry_times,
+         creator_id, hot_cached, status, claim_owner, claim_time, claim_deadline, dispatch_target, dispatch_note,
+         archive_path, create_time, update_time)
+        values
+        (#{id}, #{jobName}, #{routeKey}, #{shardKey}, #{payloadJson}, #{executeTime}, #{priority}, #{retryTimes},
+         #{maxRetryTimes}, #{creatorId}, #{hotCached}, #{status}, #{claimOwner}, #{claimTime}, #{claimDeadline},
+         #{dispatchTarget}, #{dispatchNote}, #{archivePath}, #{createTime}, #{updateTime})
+        on duplicate key update
+            job_name = values(job_name),
+            route_key = values(route_key),
+            shard_key = values(shard_key),
+            payload_json = values(payload_json),
+            execute_time = values(execute_time),
+            priority = values(priority),
+            retry_times = values(retry_times),
+            max_retry_times = values(max_retry_times),
+            creator_id = values(creator_id),
+            hot_cached = values(hot_cached),
+            status = values(status),
+            claim_owner = values(claim_owner),
+            claim_time = values(claim_time),
+            claim_deadline = values(claim_deadline),
+            dispatch_target = values(dispatch_target),
+            dispatch_note = values(dispatch_note),
+            archive_path = coalesce(archive_path, values(archive_path)),
+            create_time = values(create_time),
+            update_time = values(update_time)
+    </insert>
+
+    <delete id="deleteHotJob">
+        delete from sj_job
+        where id = #{id}
+          and status = #{status}
+    </delete>
+
+    <update id="updateArchivePath">
+        update sj_job_archive
+        set archive_path = #{archivePath}
+        where id = #{id}
+          and (archive_path is null or archive_path = '')
+    </update>
+
+    <select id="countAll" resultType="java.lang.Long">
+        select count(1) from sj_job
+    </select>
+
+    <select id="countByStatus" resultType="java.lang.Long">
+        select count(1)
+        from sj_job
+        where status = #{status}
+    </select>
+
+    <select id="countHotCached" resultType="java.lang.Long">
+        select count(1)
+        from sj_job
+        where hot_cached = 1
+    </select>
+
+    <select id="countArchiveAll" resultType="java.lang.Long">
+        select count(1)
+        from sj_job_archive
+    </select>
+
+</mapper>

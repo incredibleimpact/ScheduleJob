@@ -1,0 +1,4 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Mon Apr 20 11:43:48 CST 2026
+https\://maven.aliyun.com/nexus/content/repositories/central/.error=Could not transfer artifact org.springframework.boot\:spring-boot-starter-data-redis-reactive\:pom\:3.3.4 from/to alimaven (https\://maven.aliyun.com/nexus/content/repositories/central/)\: transfer failed for https\://maven.aliyun.com/nexus/content/repositories/central/org/springframework/boot/spring-boot-starter-data-redis-reactive/3.3.4/spring-boot-starter-data-redis-reactive-3.3.4.pom
+@default-alimaven-https\://maven.aliyun.com/nexus/content/repositories/central/.lastUpdated=1776656628783

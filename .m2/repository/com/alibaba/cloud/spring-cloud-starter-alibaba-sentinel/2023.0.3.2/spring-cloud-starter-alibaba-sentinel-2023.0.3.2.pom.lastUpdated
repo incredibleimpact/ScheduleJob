@@ -1,0 +1,4 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Sun Apr 19 16:27:09 CST 2026
+https\://maven.aliyun.com/nexus/content/repositories/central/.error=Could not transfer artifact com.alibaba.cloud\:spring-cloud-starter-alibaba-sentinel\:pom\:2023.0.3.2 from/to alimaven (https\://maven.aliyun.com/nexus/content/repositories/central/)\: transfer failed for https\://maven.aliyun.com/nexus/content/repositories/central/com/alibaba/cloud/spring-cloud-starter-alibaba-sentinel/2023.0.3.2/spring-cloud-starter-alibaba-sentinel-2023.0.3.2.pom
+@default-alimaven-https\://maven.aliyun.com/nexus/content/repositories/central/.lastUpdated=1776587229645

@@ -1,0 +1,20 @@
+schedulejob:
+  scheduler:
+    # Avoid hot-caching all million appointments immediately on create.
+    preheat-minutes: 8
+    # Smooth the due-job scan/claim wave so a single tick does not flood Redis inflight.
+    scan-batch-size: 10000
+    claim-batch-size: 2000
+    # Reduce background Redis chatter during local load tests.
+    executor-heartbeat-timeout-ms: 10000
+    member-ttl-ms: 10000
+    member-heartbeat-interval-ms: 3000
+    lease-ttl-ms: 10000
+    lease-renew-interval-ms: 3000
+    recover-interval-ms: 5000
+    # Use real workers in load tests so inflight can drain through callback completion.
+    benchmark-no-worker-mode: false
+    # Lower command-consumer concurrency to reduce local Redis connection churn.
+    command-consumer-thread-count: 8
+    command-read-batch-size: 200
+    command-read-block-timeout-ms: 250

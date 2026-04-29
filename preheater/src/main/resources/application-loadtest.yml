@@ -1,0 +1,8 @@
+schedulejob:
+  scheduler:
+    # Let preheater, not createJob, gradually move near-future tasks into Redis.
+    preheat-minutes: 8
+    scan-batch-size: 20000
+  preheater:
+    # Speed up catch-up when a 100k bucket enters the hot window.
+    preheat-interval-ms: 100

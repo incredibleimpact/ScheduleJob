@@ -1,0 +1,40 @@
+server:
+  port: 8360
+
+spring:
+  application:
+    name: service-archiver
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/schedule_job?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
+  data:
+    redis:
+      timeout: 3000ms
+      cluster:
+        max-redirects: 3
+        nodes:
+          - ${SCHEDULEJOB_REDIS_CLUSTER_NODE_1:127.0.0.1:7001}
+          - ${SCHEDULEJOB_REDIS_CLUSTER_NODE_2:127.0.0.1:7002}
+          - ${SCHEDULEJOB_REDIS_CLUSTER_NODE_3:127.0.0.1:7003}
+          - ${SCHEDULEJOB_REDIS_CLUSTER_NODE_4:127.0.0.1:7004}
+          - ${SCHEDULEJOB_REDIS_CLUSTER_NODE_5:127.0.0.1:7005}
+          - ${SCHEDULEJOB_REDIS_CLUSTER_NODE_6:127.0.0.1:7006}
+      lettuce:
+        cluster:
+          refresh:
+            adaptive: true
+            period: 30s
+
+mybatis:
+  mapper-locations: classpath*:mapper/*.xml
+  type-aliases-package: schedulejob.scheduler.domain
+
+schedulejob:
+  scheduler:
+    shard-count: 32
+  archiver:
+    archive-after-minutes: ${SCHEDULEJOB_ARCHIVER_ARCHIVE_AFTER_MINUTES:1440}
+    archive-dir: ${SCHEDULEJOB_ARCHIVER_ARCHIVE_DIR:data/cold-job}
+    archive-cron: ${SCHEDULEJOB_ARCHIVER_ARCHIVE_CRON:0 0 2 * * *}
