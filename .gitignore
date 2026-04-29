@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Redis runtime data
+docs/redis-cluster/data/
+*.rdb
+*.aof
