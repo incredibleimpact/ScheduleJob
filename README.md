@@ -1,7 +1,6 @@
 # ScheduleJob
 
-`ScheduleJob` 是一个面向高并发预约/延时执行场景的分布式任务调度示例工程。
-
+`ScheduleJob` 是一个面向大规模预约场景、对任务派发时延有要求的分布式任务调度系统，提供任务创建、暂停和恢复、到期派发执行等能力。通过近未来任务预热、分片调度、负载均衡派发、冷热数据归档等方法优化任务派发链路。在本地单机Redis Cluster压测环境下，系统可稳定承接百万级预约任务，并在十万级任务集中到期场景下实现亚秒级派发启动
 当前工程包含 6 个核心模块：
 
 - `model`：共享 DTO、命令模型和 Redis key 常量
@@ -54,9 +53,3 @@ mvn -DskipTests compile
 5. 启动 `worker`
 6. 启动 `preheater`
 7. 视需要启动 `archiver`
-
-说明：
-
-- 生产环境推荐把写请求发到 `mq`
-- `scheduler` 仍保留原写接口，主要用于直连调试和兼容验证
-- Windows + Memurai 的本地启动步骤见 [docs/local-startup.md](docs/local-startup.md)
